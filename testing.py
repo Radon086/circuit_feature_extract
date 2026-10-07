@@ -1,12 +1,13 @@
-from transformers import AutoProcessor, AutoModelForMultimodalLM
+from transformers import AutoProcessor, AutoModelForMultimodalLM, AutoModelForImageTextToText
 from string import Template
 import os
 import cv2
 import torch
 from ultralytics import YOLO
 import numpy as np
+from PIL import Image
 
-def annotate_bounding_boxes(image_path, predictions, threshold=0.3): #0.4
+def annotate_bounding_boxes(image_path, predictions, threshold=0.01): #0.4
     """
     Annotates an image with bounding boxes and labels based on the given predictions tensor.
     
@@ -123,7 +124,7 @@ def annotate_bounding_boxes(image_path, predictions, threshold=0.3): #0.4
         
     return image, tmp
 
-def gemma_test():
+def gemma_test(imgs):
     MODEL_PATH = "./model/gemma-4/gemma-4-12B-it"
     model = AutoModelForMultimodalLM.from_pretrained(MODEL_PATH, dtype="auto", device_map="auto")
     processor = AutoProcessor.from_pretrained(MODEL_PATH)
@@ -134,10 +135,9 @@ def gemma_test():
     else:
         print('Image path loaded.')
 
-    txt_prompt = Template( 
-        """
+    txt_prompt = """
         ### Task:
-        Locate the L298N component.
+        Locate the L298N or tps 5430 component.
 
         Return ONLY four integers:
         x_min,y_min,x_max,y_max
@@ -145,41 +145,45 @@ def gemma_test():
         Do not explain.
         Do not describe the circuit.
         Do not output any other text.
-        """
-    )
-
-    prompt = [
-        {
-            "role": "user", "content": [
-                {"type": "image", "image": img_path},
-                {"type": "text", "text": txt_prompt}
-            ]
-        }
-    ]
-
-    def remove_model_thinktags(response):
-        if response.endswith("<turn|>"):
-            response = response[:-7]
-        if "<channel|>" in response:
-            index = response.find("<channel|>")
-            response = response[index+10:]
-        return response
-
-    inputs = processor.apply_chat_template(
-        prompt,
-        tokenize=True,
-        return_dict=True,
-        return_tensors="pt",
-        add_generation_prompt=True,
-    ).to(model.device)
+    """
 
 
-    input_len = inputs["input_ids"].shape[-1]
+    for img in imgs:
+        print(f'\nGemma processing img:{img}')
 
-    # Generate output
-    outputs = model.generate(**inputs, max_new_tokens=512, temperature = 0.1)
-    response = processor.decode(outputs[0][input_len:], skip_special_tokens=False)
-    print("Response:\n", response)
+
+        prompt = [
+            {
+                "role": "user", "content": [
+                    {"type": "image", "image": img_path},
+                    {"type": "text", "text": txt_prompt}
+                ]
+            }
+        ]
+
+        def remove_model_thinktags(response):
+            if response.endswith("<turn|>"):
+                response = response[:-7]
+            if "<channel|>" in response:
+                index = response.find("<channel|>")
+                response = response[index+10:]
+            return response
+
+        inputs = processor.apply_chat_template(
+            prompt,
+            tokenize=True,
+            return_dict=True,
+            return_tensors="pt",
+            add_generation_prompt=True,
+        ).to(model.device)
+
+
+        input_len = inputs["input_ids"].shape[-1]
+
+        # Generate output
+        outputs = model.generate(**inputs, max_new_tokens=512, temperature = 0.1)
+        response = processor.decode(outputs[0][input_len:], skip_special_tokens=False)
+        print("Response:\n", response)
 
 
 
@@ -226,10 +230,83 @@ def yolo_test(image_path):
     '''
     return annotated_img, components
     
-#gemma_test()
+def qwen_test(imgs):
+    model_path = "./model/qwen3vl/"
+    
+    model = AutoModelForImageTextToText.from_pretrained(
+        model_path, dtype="auto", device_map="auto"
+    )
 
-#img_path = './imgs/app_circuits/L298_8.png'
-img_path = './imgs/app_circuits/2-stage-5tota.png'
-annotated_img, components = yolo_test(img_path)
-with open('./output/test/annotated_img.png', 'wb') as f:
-    cv2.imwrite('annotated_img.png', annotated_img)
+    processor = AutoProcessor.from_pretrained(model_path)
+
+    txt_prompt = """
+        ### Task:
+        Locate the L298N or tps 5430 component.
+
+        Return ONLY four integers:
+        x_min,y_min,x_max,y_max
+
+        Do not explain.
+        Do not describe the circuit.
+        Do not output any other text.
+    """
+    
+
+    for img in imgs:
+        print(f'\nQwen processing img:{img}')
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image",
+                        "image": img,
+                    },
+                    {"type": "text", "text": txt_prompt},
+                ],
+            }
+        ]
+
+        # Preparation for inference
+        inputs = processor.apply_chat_template(
+            messages,
+            tokenize=True,
+            add_generation_prompt=True,
+            return_dict=True,
+            return_tensors="pt"
+        )
+        inputs = inputs.to(model.device)
+
+        # Inference: Generation of the output
+        generated_ids = model.generate(**inputs, max_new_tokens=128)
+        generated_ids_trimmed = [
+            out_ids[len(in_ids) :] for in_ids, out_ids in zip(inputs.input_ids, generated_ids)
+        ]
+        output_text = processor.batch_decode(
+            generated_ids_trimmed, skip_special_tokens=True, clean_up_tokenization_spaces=False
+        )
+        print(output_text)    
+    
+    
+
+img_path = ['./imgs/app_circuits/L298_8.png','./imgs/app_circuits/L298_9.png','./imgs/app_circuits/L298_10.png','./imgs/app_circuits/tps5430_7-9.png']
+#img_path = './imgs/app_circuits/2-stage-5tota.png'
+
+if not os.path.exists('./output/test'):
+    os.makedirs('./output/test')
+
+qwen_test(img_path)
+gemma_test(img_path)
+
+
+'''
+id = 1    
+for path in img_path:
+    annotated_img, components = yolo_test(path)
+    annotated_img_rgb = cv2.cvtColor(annotated_img, cv2.COLOR_BGR2RGB)
+    annotated_img_rgb = Image.fromarray(annotated_img_rgb)
+    annotated_img_rgb.save(f'./output/test/annotated_img{id}.png')
+    id +=1
+'''
+#with open('./output/test/annotated_img.png', 'wb') as f:
+#    cv2.imwrite('annotated_img.png', annotated_img)
