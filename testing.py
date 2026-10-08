@@ -135,23 +135,65 @@ def gemma_test(imgs):
     else:
         print('Image path loaded.')
 
+    txt_prompt_template = Template("""
+    Locate the $target integrated circuit bounding box in the image.
+
+    Return ONLY in this format:
+    y1,x1,y2,x2
+
+    The coordinates must be normalized to 0-1000.
+    
+    Do not include surrounding wires, external components, or the rest of the circuit.
+    Do not explain.
+    Do not describe the circuit.
+    Do not output any other text.
+    """)
+
+    '''
     txt_prompt = """
         ### Task:
-        Locate the L298N or tps 5430 component.
+        Locate the cat and return its bounding box.
 
         Return ONLY four integers:
-        x_min,y_min,x_max,y_max
+        y1, x1, y2, x2
 
         Do not explain.
         Do not describe the circuit.
         Do not output any other text.
     """
+    '''
+    
+    for img_path in imgs:
+        print(f'\nGemma processing img:{img_path}')
 
+        if "L298" in img_path:
+            target = "L298"
+        elif "tps5430" in img_path:
+            target = "TPS5430"
 
-    for img in imgs:
-        print(f'\nGemma processing img:{img}')
+        txt_prompt = txt_prompt_template.substitute(target=target)
+        if target == "L298":
+            txt_prompt = """
 
+                            Find the big rectangulars in the picture.
 
+                            Return ONLY:
+                            y1,x1,y2,x2
+            """
+        elif target == "TPS5430":
+            txt_prompt = """
+            Locate the TPS5430 integrated circuit.
+
+            Find the rectangular device package labeled TPS5430DDA.
+            Return the bounding box of the complete IC package.
+
+            Do not include surrounding wires or external components.
+
+            Return ONLY:
+            y1,x1,y2,x2
+
+            Coordinates are normalized from 0 to 1000.
+            """
         prompt = [
             {
                 "role": "user", "content": [
@@ -183,9 +225,27 @@ def gemma_test(imgs):
         # Generate output
         outputs = model.generate(**inputs, max_new_tokens=512, temperature = 0.1)
         response = processor.decode(outputs[0][input_len:], skip_special_tokens=False)
+        response = remove_model_thinktags(response)
         print("Response:\n", response)
+        
+        file_name = img_path.split('/')[-1]
 
+        response = response.splitlines()
+        img = cv2.imread(img_path)
+        for box in response:
+            # normalze to 1000x1000
+            y1, x1, y2, x2 = map(int, box.split(','))
+            
+            h,w = img.shape[:2]
+            y1 = int(y1 * h / 1000)
+            y2 = int(y2 * h / 1000)
+            x1 = int(x1 * w / 1000)
+            x2 = int(x2 * w / 1000)
 
+            cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 0), 2)
+
+        cv2.imwrite(f'./output/test/gemma_annotated_{file_name}', img)
+        
 
 def yolo_test(image_path):
 
@@ -241,10 +301,22 @@ def qwen_test(imgs):
 
     txt_prompt = """
         ### Task:
-        Locate the L298N or tps 5430 component.
+        Locate the cat and return its bounding box.
 
-        Return ONLY four integers:
-        x_min,y_min,x_max,y_max
+        Return ONLY in this format:
+        x1, y1, x2, y2
+
+        Do not explain.
+        Do not describe the circuit.
+        Do not output any other text.
+    """
+    
+    txt_prompt = """
+        ### Task:
+        Locate the rectangles labeled with l289 or tps5430 and return its bounding box.
+
+        Return ONLY in this format:
+        x1, y1, x2, y2
 
         Do not explain.
         Do not describe the circuit.
@@ -252,15 +324,15 @@ def qwen_test(imgs):
     """
     
 
-    for img in imgs:
-        print(f'\nQwen processing img:{img}')
+    for img_path in imgs:
+        print(f'\nQwen processing img:{img_path}')
         messages = [
             {
                 "role": "user",
                 "content": [
                     {
                         "type": "image",
-                        "image": img,
+                        "image": img_path,
                     },
                     {"type": "text", "text": txt_prompt},
                 ],
@@ -286,17 +358,36 @@ def qwen_test(imgs):
             generated_ids_trimmed, skip_special_tokens=True, clean_up_tokenization_spaces=False
         )
         print(output_text)    
-    
+
+        file_name = img_path.split('/')[-1]
+        response = output_text[0]
+        response = response.split('/n')
+        img = cv2.imread(img_path)
+        for box in response:
+            # normalze to 1000x1000
+            x1, y1, x2, y2 = map(int, box.split(','))
+            
+            h,w = img.shape[:2]
+            y1 = int(y1 * h / 1000)
+            y2 = int(y2 * h / 1000)
+            x1 = int(x1 * w / 1000)
+            x2 = int(x2 * w / 1000)
+
+            cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 0), 2)
+
+        cv2.imwrite(f'./output/test/qwen_annotated_{file_name}', img)
     
 
 img_path = ['./imgs/app_circuits/L298_8.png','./imgs/app_circuits/L298_9.png','./imgs/app_circuits/L298_10.png','./imgs/app_circuits/tps5430_7-9.png']
+img_path = ['./imgs/app_circuits/L298_8.png','./imgs/app_circuits/L298_9.png','./imgs/app_circuits/L298_10.png']
+#img_path = ['./imgs/app_circuits/cat.png']
 #img_path = './imgs/app_circuits/2-stage-5tota.png'
 
 if not os.path.exists('./output/test'):
     os.makedirs('./output/test')
 
 qwen_test(img_path)
-gemma_test(img_path)
+#gemma_test(img_path)
 
 
 '''
