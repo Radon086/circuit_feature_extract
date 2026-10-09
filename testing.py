@@ -124,6 +124,27 @@ def annotate_bounding_boxes(image_path, predictions, threshold=0.01): #0.4
         
     return image, tmp
 
+test_prompt = """
+This is a preprocessed circuit diagram. Image preprocessing has removed many thin strokes and redundant visual details, but it may also have partially removed the boundaries of the rectangular IC packages.
+
+Your task is to identify the remaining rectangular IC packages and estimate the bounding box of each complete package.
+
+Instructions:
+- Look for the large rectangular structures representing IC packages.
+- The rectangle boundaries may be incomplete, and some internal circuit symbols may remain visible.
+- Do not treat small rectangles, isolated line segments, or external components as target IC packages.
+- Exclude external wires and components from each bounding box.
+- There may be multiple IC packages in the image. Return one bounding box for each detected package.
+- Estimate the full outer boundary of each package, including portions that have been removed by preprocessing.
+
+Return ONLY the bounding boxes, one per line, in this format:
+y1,x1,y2,x2
+
+Coordinates must be normalized to the range 0–1000, relative to the image height and width respectively.
+Do not include explanations or any other text.
+"""
+
+
 def gemma_test(imgs):
     MODEL_PATH = "./model/gemma-4/gemma-4-12B-it"
     model = AutoModelForMultimodalLM.from_pretrained(MODEL_PATH, dtype="auto", device_map="auto")
@@ -199,11 +220,15 @@ def gemma_test(imgs):
         else:
             txt_prompt = """
 
-                            Find the big rectangulars in the picture.
+                This is a filtered circuit diagram. The filter tried to filter redundent features rather than the appilcation circuit, which is represent by  rectangulars. 
+                However, the filter is not perfect enough to leave only the rectanguler on the picture.
+                Support the filter's task. Judge the rectangulars on the picture and return their possible locations.
+                There can be more than one rectangulars in the picture.
 
-                            Return ONLY:
-                            y1,x1,y2,x2
+                Return ONLY in a string of four integers:
+                y1,x1,y2,x2
             """
+            txt_prompt = test_prompt
         prompt = [
             {
                 "role": "user", "content": [
