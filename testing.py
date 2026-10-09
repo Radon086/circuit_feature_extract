@@ -194,6 +194,14 @@ def gemma_test(imgs):
 
             Coordinates are normalized from 0 to 1000.
             """
+        else:
+            txt_prompt = """
+
+                            Find the big rectangulars in the picture.
+
+                            Return ONLY:
+                            y1,x1,y2,x2
+            """
         prompt = [
             {
                 "role": "user", "content": [
@@ -382,12 +390,13 @@ img_path = ['./imgs/app_circuits/L298_8.png','./imgs/app_circuits/L298_9.png','.
 img_path = ['./imgs/app_circuits/L298_8.png','./imgs/app_circuits/L298_9.png','./imgs/app_circuits/L298_10.png']
 #img_path = ['./imgs/app_circuits/cat.png']
 #img_path = './imgs/app_circuits/2-stage-5tota.png'
+img_path = ['./oputput/test_cv/Width_Filtered_Small_Areas_0.png','./oputput/test_cv/Width_Filtered_Small_Areas_1.png','./oputput/test_cv/Width_Filtered_Small_Areas_2.png','./oputput/test_cv/Width_Filtered_Small_Areas_3.png']
 
 if not os.path.exists('./output/test'):
     os.makedirs('./output/test')
 
-qwen_test(img_path)
-#gemma_test(img_path)
+#qwen_test(img_path)
+gemma_test(img_path)
 
 
 '''
