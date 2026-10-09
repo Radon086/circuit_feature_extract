@@ -6,6 +6,7 @@ import torch
 from ultralytics import YOLO
 import numpy as np
 from PIL import Image
+import json
 
 MODEL_PATH = "./model/gemma-4/gemma-4-12B-it"
 model = AutoModelForMultimodalLM.from_pretrained(MODEL_PATH, dtype="auto", device_map="auto")
@@ -150,11 +151,7 @@ def annotate_bounding_boxes(image_path, predictions, threshold=0.01): #0.4
     return image, tmp
 
 def locate_IC(imgs):
-    if not os.path.exists(img_path):
-        print(f"Error: Image not found at {os.path.abspath(img_path)}")
-    else:
-        print('Image path loaded.')
-
+    dic = []
     for img_path in imgs:
         print(f'\nGemma processing img:{img_path}')
         prompt = [
@@ -195,6 +192,7 @@ def locate_IC(imgs):
 
         response = response.splitlines()
         img = cv2.imread(img_path)
+        boxes = []
         for box in response:
             # normalze to 1000x1000
             y1, x1, y2, x2 = map(int, box.split(','))
@@ -204,11 +202,16 @@ def locate_IC(imgs):
             y2 = int(y2 * h / 1000)
             x1 = int(x1 * w / 1000)
             x2 = int(x2 * w / 1000)
-
+            boxes.append([x1, y1, x2, y2])
             cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 0), 2)
-
+        dic.append({"img_path": img_path, "boxes": boxes})
         cv2.imwrite(f'./output/test_pipeline/gemma_annotated_{file_name}', img)
-
+    return dic
+    
 # The filtered by thickness imgs        
 img_path = ['./output/test_cv/Width_Filtered_Small_Areas_0.png','./output/test_cv/Width_Filtered_Small_Areas_1.png','./output/test_cv/Width_Filtered_Small_Areas_2.png','./output/test_cv/Width_Filtered_Small_Areas_3.png']
-locate_IC(img_path)
+IC_bbox=locate_IC(img_path)
+with open('./output/test_pipeline/IC_bbox.jsonl', 'w') as f:
+    for item in IC_bbox:
+        json.dump(item, f)
+        f.write('\n')
