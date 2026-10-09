@@ -31,7 +31,63 @@ y1,x1,y2,x2
 Coordinates must be normalized to the range 0–1000, relative to the image height and width respectively.
 Do not include explanations or any other text.
 """
+find_IC_PIN_prompt = Template(
+    """
+    You are analyzing a circuit diagram for semantic extraction.
 
+    The supplied bounding box identifies the target IC region in the original circuit image.
+
+    Bounding box in [x1, y1, x2, y2] format:
+    $box_str
+
+    Analyze the target IC and its visible pin connections.
+
+    For each pin or terminal, report:
+    1. Pin number or label, if visible.
+    2. Pin location on the IC boundary (top, bottom, left, or right).
+    3. The wire or net visibly connected to it.
+    4. Any connected external component or labeled signal, if identifiable.
+    5. Confidence and visual evidence.
+
+    Rules:
+    - Use the original image to inspect wires and labels around the IC boundary.
+    - Trace connections only when supported by visible evidence.
+    - Do not invent missing pin numbers, labels, or connections.
+    - If a connection cannot be determined from the image, mark it as uncertain.
+    - Distinguish directly observed connections from inferred ones.
+
+    Return the result as JSON.
+    """
+)
+
+find_IC_PIN_prompt_no_grounding = """
+    You are analyzing a circuit diagram for semantic extraction.
+    Analyze the target IC and its visible pin connections.
+
+    For each pin or terminal, report:
+    1. Pin number or label, if visible.
+    2. Pin location on the IC boundary (top, bottom, left, or right).
+    3. The wire or net visibly connected to it.
+    4. Any connected external component or labeled signal, if identifiable.
+    5. Confidence and visual evidence.
+
+    Rules:
+    - Use the original image to inspect wires and labels around the IC boundary.
+    - Trace connections only when supported by visible evidence.
+    - Do not invent missing pin numbers, labels, or connections.
+    - If a connection cannot be determined from the image, mark it as uncertain.
+    - Distinguish directly observed connections from inferred ones.
+
+    Return the result as JSON.
+    """
+
+def remove_model_thinktags(response):
+    if response.endswith("<turn|>"):
+        response = response[:-7]
+    if "<channel|>" in response:
+        index = response.find("<channel|>")
+        response = response[index+10:]
+    return response
 
 def annotate_bounding_boxes(image_path, predictions, threshold=0.01): #0.4
     """
@@ -163,14 +219,6 @@ def locate_IC(imgs):
             }
         ]
 
-        def remove_model_thinktags(response):
-            if response.endswith("<turn|>"):
-                response = response[:-7]
-            if "<channel|>" in response:
-                index = response.find("<channel|>")
-                response = response[index+10:]
-            return response
-
         inputs = processor.apply_chat_template(
             prompt,
             tokenize=True,
@@ -207,11 +255,97 @@ def locate_IC(imgs):
         dic.append({"img_path": img_path, "boxes": boxes})
         cv2.imwrite(f'./output/test_pipeline/gemma_annotated_{file_name}', img)
     return dic
-    
+
+def ask_pins(img, bbox):
+
+    box_str = ""
+
+    for box in bbox:
+        x1, y1, x2, y2 = box
+        box_str += f"[{x1}, {y1}, {x2}, {y2}]\n"
+
+    prompt = find_IC_PIN_prompt.substitute(box_str=box_str)
+
+    prompt = [
+        {
+            "role": "user", "content": [
+                {"type": "image", "image": img},
+                {"type": "text", "text": prompt}
+            ]
+        }
+    ]
+
+    inputs = processor.apply_chat_template(
+        prompt,
+        tokenize=True,
+        return_dict=True,
+        return_tensors="pt",
+        add_generation_prompt=True,
+    ).to(model.device)
+
+    input_len = inputs["input_ids"].shape[-1]
+
+    # Generate output
+    outputs = model.generate(**inputs, max_new_tokens=512, temperature=0.1)
+    response = processor.decode(outputs[0][input_len:], skip_special_tokens=False)
+    response = remove_model_thinktags(response)
+    print("Response:\n", response)  
+
+# A compared version of ask_pins that does not include grounding information in the prompt.
+def ask_pins_no_grounding(img):
+    prompt = find_IC_PIN_prompt_no_grounding
+
+    prompt = [
+        {
+            "role": "user", "content": [
+                {"type": "image", "image": img},
+                {"type": "text", "text": prompt}
+            ]
+        }
+    ]
+
+    inputs = processor.apply_chat_template(
+        prompt,
+        tokenize=True,
+        return_dict=True,
+        return_tensors="pt",
+        add_generation_prompt=True,
+    ).to(model.device)
+
+    input_len = inputs["input_ids"].shape[-1]
+
+    # Generate output
+    outputs = model.generate(**inputs, max_new_tokens=1024, temperature=0.1)
+    response = processor.decode(outputs[0][input_len:], skip_special_tokens=False)
+    response = remove_model_thinktags(response)
+    print("Response:\n", response)
+
+
 # The filtered by thickness imgs        
-img_path = ['./output/test_cv/Width_Filtered_Small_Areas_0.png','./output/test_cv/Width_Filtered_Small_Areas_1.png','./output/test_cv/Width_Filtered_Small_Areas_2.png','./output/test_cv/Width_Filtered_Small_Areas_3.png']
-IC_bbox=locate_IC(img_path)
-with open('./output/test_pipeline/IC_bbox.jsonl', 'w') as f:
-    for item in IC_bbox:
-        json.dump(item, f)
-        f.write('\n')
+#img_path = ['./output/test_cv/Width_Filtered_Small_Areas_0.png','./output/test_cv/Width_Filtered_Small_Areas_1.png','./output/test_cv/Width_Filtered_Small_Areas_2.png','./output/test_cv/Width_Filtered_Small_Areas_3.png']
+#IC_bbox=locate_IC(img_path)
+#with open('./output/test_pipeline/IC_bbox.jsonl', 'w') as f:
+#    for item in IC_bbox:
+#        json.dump(item, f)
+#        f.write('\n')
+
+"""
+IC_bbox = []
+origin_path = ['./imgs/app_circuits/L298_8.png','./imgs/app_circuits/L298_9.png','./imgs/app_circuits/L298_10.png','./imgs/app_circuits/tps5430_7-9.png']
+with open('./output/test_pipeline/IC_bbox.jsonl', 'r') as f:
+    for line in f:
+        IC_bbox.append(json.loads(line.strip()))
+
+for path, bbox in zip(origin_path, IC_bbox):
+    print(f'\nGemma processing img:{path}')
+    img = cv2.imread(path)
+    ask_pins(path, bbox['boxes'])
+"""
+    
+IC_bbox = []
+origin_path = ['./imgs/app_circuits/L298_8.png','./imgs/app_circuits/L298_9.png','./imgs/app_circuits/L298_10.png','./imgs/app_circuits/tps5430_7-9.png']
+for path in origin_path:
+    print(f'\nGemma processing img:{path}')
+    img = cv2.imread(path)
+    ask_pins_no_grounding(img)
+    break
