@@ -166,12 +166,14 @@ def gemma_test(imgs):
     for img_path in imgs:
         print(f'\nGemma processing img:{img_path}')
 
+        target = ''
         if "L298" in img_path:
             target = "L298"
         elif "tps5430" in img_path:
             target = "TPS5430"
 
-        txt_prompt = txt_prompt_template.substitute(target=target)
+        #txt_prompt = txt_prompt_template.substitute(target=target)
+        txt_prompt = ''
         if target == "L298":
             txt_prompt = """
 
@@ -390,7 +392,7 @@ img_path = ['./imgs/app_circuits/L298_8.png','./imgs/app_circuits/L298_9.png','.
 img_path = ['./imgs/app_circuits/L298_8.png','./imgs/app_circuits/L298_9.png','./imgs/app_circuits/L298_10.png']
 #img_path = ['./imgs/app_circuits/cat.png']
 #img_path = './imgs/app_circuits/2-stage-5tota.png'
-img_path = ['./oputput/test_cv/Width_Filtered_Small_Areas_0.png','./oputput/test_cv/Width_Filtered_Small_Areas_1.png','./oputput/test_cv/Width_Filtered_Small_Areas_2.png','./oputput/test_cv/Width_Filtered_Small_Areas_3.png']
+img_path = ['./output/test_cv/Width_Filtered_Small_Areas_0.png','./output/test_cv/Width_Filtered_Small_Areas_1.png','./output/test_cv/Width_Filtered_Small_Areas_2.png','./output/test_cv/Width_Filtered_Small_Areas_3.png']
 
 if not os.path.exists('./output/test'):
     os.makedirs('./output/test')
