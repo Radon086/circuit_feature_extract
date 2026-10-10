@@ -29,9 +29,11 @@ manager_detector = DetectorManager(yolo_checkpoint="./model/yolo/yolov8_best.pt"
 manager_ocr = OCRManager(det_arch="db_resnet50", reco_arch="master", pretrained=True)
 manager_vlm = VLMManager(model_path="./model/gemma-4/gemma-4-12B-it", output_dir="./output/test_proto")
 
+out_dir = "./output/test_proto"
+if not os.path.exists(out_dir):
+    os.makedirs(out_dir)
+
 for img_path in img_list:
-    ocr_results = manager_ocr.predict(img_path)
+    ocr_results = manager_ocr.predict(img_path, thresh= 0.3)
     ocr_lines = manager_ocr.get_lines(ocr_results)
-    print(f"OCR Results for {img_path}:")
-    for line in ocr_lines:
-        print(f"Text: {line['text']}, BBox: {line['bbox']}")
+    manager_ocr.draw_lines(img_path, ocr_lines, output_path= out_dir)
