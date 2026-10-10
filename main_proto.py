@@ -39,3 +39,5 @@ for img_path in img_list:
     manager_ocr.draw_lines(img_path, ocr_lines, output_path= out_dir)
     componets = manager_detector.comp_detection(img_path, threshold=0.1)
     manager_detector.save_annotated_image(img_path, componets, output_path= out_dir)
+    ic_bbox = manager_vlm.locate_IC(img_path, out_dir,save_filterd=True,save_annotated=True)
+    manager_vlm.ask_pins(img_path, ic_bbox)

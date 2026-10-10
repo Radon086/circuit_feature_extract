@@ -125,7 +125,7 @@ def find_contours(image, draw_contours=False, exp_name=None):
     return filterd_contours
 
 
-def find_strokes(image_path, draw_contours=False, exp_name=None):
+def find_strokes(image_path):
     gray = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
 
     _, binary = cv2.threshold(
