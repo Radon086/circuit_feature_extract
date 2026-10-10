@@ -49,10 +49,17 @@ find_IC_PIN_prompt = Template(
     4. Any connected external component or labeled signal, if identifiable.
     5. Confidence and visual evidence.
 
+    Json Format(Slot/Type/Purpose):
+    1. pin_number/string or null/Visible pin number or label
+    2. location/string/	top, bottom, left, or right
+    3. connected_net/string or null/Visible net label, such as +VS, C, or V_en
+    4. connected_component/string or null/Connected external component, if identifiable
+    5. confidence/string/high, medium, or low
+
     Rules:
     - Use the original image to inspect wires and labels around the IC boundary.
     - Trace connections only when supported by visible evidence.
-    - Do not invent missing pin numbers, labels, or connections.
+    - Do not invent missing pin numbers, labels, or convnections.
     - If a connection cannot be determined from the image, mark it as uncertain.
     - Distinguish directly observed connections from inferred ones.
 
@@ -77,7 +84,7 @@ find_IC_PIN_prompt_no_grounding = """
     - Do not invent missing pin numbers, labels, or connections.
     - If a connection cannot be determined from the image, mark it as uncertain.
     - Distinguish directly observed connections from inferred ones.
-
+    
     Return the result as JSON.
     """
 
