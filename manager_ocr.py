@@ -10,7 +10,9 @@ class OCRManager:
         doc = DocumentFile.from_images(image_path)
         self.model.det_predictor.model.postprocessor.box_thresh = thresh
         result = self.model(doc)
-
+        return result
+    
+    def get_lines(self, result):
         ocr_results = []
         for page_idx, page in enumerate(result.pages):
             for block in page.blocks:
