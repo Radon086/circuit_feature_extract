@@ -31,8 +31,8 @@ class DetectorManager:
 
         predictions = predictions.cpu().numpy()
         
-        print(f"Total predictions: {len(predictions)}")
-        print(f"Predictions (x1, y1, x2, y2, score, class_id): {predictions}")
+        #print(f"Total predictions: {len(predictions)}")
+        #print(f"Predictions (x1, y1, x2, y2, score, class_id): {predictions}")
 
         def calculate_iou(box1, box2):
             """Calculate the Intersection over Union (IoU) of two bounding boxes."""
@@ -155,6 +155,7 @@ class DetectorManager:
             text = f'{label} ({confidence:.2f})'
             cv2.putText(image, text, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
         cv2.imwrite(f'{output_path}/detector_annotated_{file_name}.png', image) 
+        print(f"Detector annotated image saved to {output_path}/detector_annotated_{file_name}.png")
 
 
      

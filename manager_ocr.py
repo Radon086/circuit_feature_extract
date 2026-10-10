@@ -8,6 +8,7 @@ class OCRManager:
 
 
     def predict(self, image_path, thresh=0.5):
+        print(f"OCR processing image: {image_path}")
         doc = DocumentFile.from_images(image_path)
         self.model.det_predictor.model.postprocessor.box_thresh = thresh
         result = self.model(doc)
