@@ -1,4 +1,5 @@
-{"img_path": "./output/test_cv/Width_Filtered_Small_Areas_0.png", "boxes": [[73, 167, 320, 281]]}
-{"img_path": "./output/test_cv/Width_Filtered_Small_Areas_1.png", "boxes": [[98, 38, 211, 301]]}
-{"img_path": "./output/test_cv/Width_Filtered_Small_Areas_2.png", "boxes": [[62, 116, 149, 297], [196, 116, 290, 297]]}
-{"img_path": "./output/test_cv/Width_Filtered_Small_Areas_3.png", "boxes": [[292, 49, 429, 179]]}
+{"img_path": "./output/test_cv/Width_Filtered_Small_Areas_0.png", "boxes": [[73, 166, 320, 281]]}
+{"img_path": "./output/test_cv/Width_Filtered_Small_Areas_1.png", "boxes": [[98, 38, 211, 302]]}
+{"img_path": "./output/test_cv/Width_Filtered_Small_Areas_2.png", "boxes": [[62, 115, 149, 296], [196, 115, 291, 296]]}
+{"img_path": "./output/test_cv/Width_Filtered_Small_Areas_3.png", "boxes": [[292, 49, 432, 179]]}
+{"img_path": "./output/test_cv/Width_Filtered_Small_Areas_4.png", "boxes": [[579, 157, 809, 705]]}

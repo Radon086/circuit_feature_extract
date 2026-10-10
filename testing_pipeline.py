@@ -29,7 +29,7 @@ Return ONLY the bounding boxes, one per line, in this format:
 y1,x1,y2,x2
 
 Coordinates must be normalized to the range 0–1000, relative to the image height and width respectively.
-Do not include explanations or any other text.
+Do not include explanations, your reasoning or any other text.
 """
 find_IC_PIN_prompt = Template(
     """
@@ -293,7 +293,7 @@ def ask_pins(img, bbox):
     input_len = inputs["input_ids"].shape[-1]
 
     # Generate output
-    outputs = model.generate(**inputs, max_new_tokens=512, temperature=0.1)
+    outputs = model.generate(**inputs, max_new_tokens=1024, temperature=0.1)
     response = processor.decode(outputs[0][input_len:], skip_special_tokens=False)
     response = remove_model_thinktags(response)
     print("Response:\n", response)  
@@ -328,17 +328,19 @@ def ask_pins_no_grounding(img):
     print("Response:\n", response)
 
 
-# The filtered by thickness imgs        
-#img_path = ['./output/test_cv/Width_Filtered_Small_Areas_0.png','./output/test_cv/Width_Filtered_Small_Areas_1.png','./output/test_cv/Width_Filtered_Small_Areas_2.png','./output/test_cv/Width_Filtered_Small_Areas_3.png']
-#IC_bbox=locate_IC(img_path)
-#with open('./output/test_pipeline/IC_bbox.jsonl', 'w') as f:
-#    for item in IC_bbox:
-#        json.dump(item, f)
-#        f.write('\n')
 
-"""
+# The filtered by thickness imgs        
+'''
+img_path = ['./output/test_cv/Width_Filtered_Small_Areas_0.png','./output/test_cv/Width_Filtered_Small_Areas_1.png','./output/test_cv/Width_Filtered_Small_Areas_2.png','./output/test_cv/Width_Filtered_Small_Areas_3.png','./output/test_cv/Width_Filtered_Small_Areas_4.png']
+IC_bbox=locate_IC(img_path)
+with open('./output/test_pipeline/IC_bbox.jsonl', 'w') as f:
+    for item in IC_bbox:
+        json.dump(item, f)
+        f.write('\n')
+'''
+
 IC_bbox = []
-origin_path = ['./imgs/app_circuits/L298_8.png','./imgs/app_circuits/L298_9.png','./imgs/app_circuits/L298_10.png','./imgs/app_circuits/tps5430_7-9.png']
+origin_path = ['./imgs/app_circuits/L298_8.png','./imgs/app_circuits/L298_9.png','./imgs/app_circuits/L298_10.png','./imgs/app_circuits/tps5430_7-9.png','./imgs/app_circuits/L298_9_2.png']
 with open('./output/test_pipeline/IC_bbox.jsonl', 'r') as f:
     for line in f:
         IC_bbox.append(json.loads(line.strip()))
@@ -347,12 +349,14 @@ for path, bbox in zip(origin_path, IC_bbox):
     print(f'\nGemma processing img:{path}')
     img = cv2.imread(path)
     ask_pins(path, bbox['boxes'])
-"""
-    
+
+
+'''
 IC_bbox = []
-origin_path = ['./imgs/app_circuits/L298_8.png','./imgs/app_circuits/L298_9.png','./imgs/app_circuits/L298_10.png','./imgs/app_circuits/tps5430_7-9.png']
+origin_path = ['./imgs/app_circuits/L298_8.png','./imgs/app_circuits/L298_9.png','./imgs/app_circuits/L298_10.png','./imgs/app_circuits/tps5430_7-9.png','./imgs/app_circuits/L298_9_2.png']
 for path in origin_path:
     print(f'\nGemma processing img:{path}')
     img = cv2.imread(path)
     ask_pins_no_grounding(img)
     break
+'''

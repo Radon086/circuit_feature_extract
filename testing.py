@@ -141,7 +141,7 @@ Return ONLY the bounding boxes, one per line, in this format:
 y1,x1,y2,x2
 
 Coordinates must be normalized to the range 0–1000, relative to the image height and width respectively.
-Do not include explanations or any other text.
+Do not include explanations, your reasoning or any other text.
 """
 
 
@@ -417,7 +417,7 @@ img_path = ['./imgs/app_circuits/L298_8.png','./imgs/app_circuits/L298_9.png','.
 img_path = ['./imgs/app_circuits/L298_8.png','./imgs/app_circuits/L298_9.png','./imgs/app_circuits/L298_10.png']
 #img_path = ['./imgs/app_circuits/cat.png']
 #img_path = './imgs/app_circuits/2-stage-5tota.png'
-img_path = ['./output/test_cv/Width_Filtered_Small_Areas_0.png','./output/test_cv/Width_Filtered_Small_Areas_1.png','./output/test_cv/Width_Filtered_Small_Areas_2.png','./output/test_cv/Width_Filtered_Small_Areas_3.png']
+img_path = ['./output/test_cv/Width_Filtered_Small_Areas_0.png','./output/test_cv/Width_Filtered_Small_Areas_1.png','./output/test_cv/Width_Filtered_Small_Areas_2.png','./output/test_cv/Width_Filtered_Small_Areas_3.png','./output/test_cv/Width_Filtered_Small_Areas_4.png']
 
 if not os.path.exists('./output/test'):
     os.makedirs('./output/test')
