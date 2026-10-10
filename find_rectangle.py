@@ -174,15 +174,16 @@ def remove_small_areas(image, min_area=10):
 
     return filtered
 
-id =0
-img_path = ['./imgs/app_circuits/L298_8.png','./imgs/app_circuits/L298_9.png','./imgs/app_circuits/L298_10.png','./imgs/app_circuits/tps5430_7-9.png']
+id =4
+#img_path = ['./imgs/app_circuits/L298_8.png','./imgs/app_circuits/L298_9.png','./imgs/app_circuits/L298_10.png','./imgs/app_circuits/tps5430_7-9.png']
+img_path = ['./imgs/app_circuits/L298_9_2.png']
 for path in img_path:
 
-    width_mask, _ = filter_by_thickness(path, threshold=4)
+    width_mask, _ = filter_by_thickness(path, threshold=5)
     #cv2.imwrite(f"output/test_cv/Width_Filtered_{id}.png", width_mask)
     #cv2.imwrite(f"output/test_cv/Gray_Filtered_{id}.png", gray_filtered)
     width_mask = remove_small_areas(width_mask, min_area=10)
-    cv2.imwrite(f"output/test_cv/Width_Filtered_Small_Areas_{id}.png", width_mask)
+    cv2.imwrite(f"output/test_cv/Width_Filtered_Small_Areas_{4}.png", width_mask)
     
     
     # kernel = np.ones((10,10),dtype=np.uint8)
