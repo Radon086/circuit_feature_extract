@@ -4,15 +4,19 @@ import cv2
 import torch
 from ultralytics import YOLO
 import numpy as np
+import torch
 
 class DetectorManager:
-    def __init__(self, yolo_checkpoint=None, device="cpu"):
+    def __init__(self, yolo_checkpoint=None, device=None):
         self.yolo_checkpoint = yolo_checkpoint if yolo_checkpoint is not None else "./model/yolo/yolov8_best.pt"
-        self.device = device
+        if device is not None:
+            self.device = device
+        else:
+            self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.model = YOLO(self.yolo_checkpoint)
         self.model.to(self.device)
 
-    def annotate_bounding_boxes(self,image_path, predictions, threshold=0.01): #0.4
+    def annotate_bounding_boxes(self,image_path, predictions, threshold=0.1): 
         """
         Annotates an image with bounding boxes and labels based on the given predictions tensor.
         
@@ -103,14 +107,6 @@ class DetectorManager:
             # Add to final predictions list
             final_predictions.append([x1, y1, x2, y2, score, class_id])
 
-            # Annotate the image with bounding box and label
-            color = (0, 255, 0)  # Green color for bounding box
-            cv2.rectangle(image, (x1, y1), (x2, y2), color, 2)
-            #print("Coordinates from annotated_img:")
-            #print(x1,y1,x2,y2)
-            text = f'{label} ({score:.2f})'
-            cv2.putText(image, text, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
-
         # Convert the final_predictions list to the specified format
         final_predictions = np.array(final_predictions, dtype=object)
         tmp = []
@@ -127,45 +123,38 @@ class DetectorManager:
                 }
             )
             
-        return image, tmp
+        return tmp
     
-    def comp_detection(self,image_path, yolo_checkpoint=None, device = "cpu"):
-        print(f"⏳ Analyzing circuit image...")
-        if yolo_checkpoint is None:
-            yolo_checkpoint="./model/yolo/yolov8_best.pt"
-            print(f"Using default vision model checkpoint: {yolo_checkpoint}")
-        # Load the pretrained YOLO model
-        model = YOLO(yolo_checkpoint)
-        model.to(device)
-
+    def comp_detection(self, image_path, threshold=0.1):
+        print(f"Detector processing image: {image_path}")
         if not os.path.exists(image_path):
                 print(f"Error: The image {image_path} does not exist.")
         try:
             # Perform prediction
-            result = model.predict(source=image_path, verbose = False, iou=0.4)
-            print("✓ Vision features extracted.")
-            annotated_img, prediction = annotate_bounding_boxes(image_path,result[0].boxes.data)
-
-            
-            return annotated_img, prediction
+            result = self.model.predict(source=image_path, verbose = False, iou=0.4)
+            print("Detector: Component detected.")
+            componets = self.annotate_bounding_boxes(image_path,result[0].boxes.data, threshold=threshold)
+            return componets
                 
         except Exception as e:
             print(f"An error occurred while processing {image_path}: {e}")
+    
+    def save_annotated_image(self, image_path, components, output_path):
+        image = cv2.imread(image_path)
+        file_name = image_path.split('/')[-1]
+        
+        if '.' in file_name:
+            file_name = file_name.rsplit('.', 1)[0]  # Remove the extension
 
-        img = cv2.imread(image_path)
-        crossing_lines = []
-        source_and_ground = []
-        
-        if torch.cuda.is_available():
-            device = 'cuda'
-        
-        # run component detection
-        annotated_img, components = comp_detection(image_path, device=device) # yolo takes image path
-        print(f"Detected components: {len(components)}")
-        '''
-        for comp in components:
-            # print(f"Component: {comp['label']}, Box: {comp['box']}, Confidence: {comp['confidence']:.2f}")
-            if comp['label'] in ['Ground']:
-                source_and_ground.append(['ground', comp['box']])
-        '''
-        return annotated_img, components
+        for component in components:
+            x1, y1, x2, y2 = component["box"]
+            label = component["label"]
+            confidence = component["confidence"]
+            color = (0, 255, 0)  # Green color for bounding box
+            cv2.rectangle(image, (x1, y1), (x2, y2), color, 2)
+            text = f'{label} ({confidence:.2f})'
+            cv2.putText(image, text, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+        cv2.imwrite(f'{output_path}/detector_annotated_{file_name}.png', image) 
+
+
+     
