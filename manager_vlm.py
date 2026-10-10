@@ -87,7 +87,7 @@ class VLMManager:
     
     def locate_IC(self,img_path, output_path, save_filterd=False, save_annotated=True):
         _, median = self._find_strokes(img_path)
-        width_mask, _ = self._filter_by_thickness(img_path, threshold=median)
+        width_mask, _ = self._filter_by_thickness(img_path, threshold=median*2)
         width_mask = self._remove_small_areas(width_mask, min_area=10)
         file_name = None
         if save_filterd or save_annotated:
@@ -104,7 +104,7 @@ class VLMManager:
         prompt = [
             {
                 "role": "user", "content": [
-                    {"type": "image", "image": width_mask},
+                    {"type": "image", "image": Image.fromarray(width_mask).convert("RGB")},
                     {"type": "text", "text": find_circuit_region_prompt}
                 ]
             }
@@ -147,7 +147,7 @@ class VLMManager:
             cv2.imwrite(f"{output_path}/IC_annotated_{file_name}.png", img)
         return boxes
     
-    def ask_pins(self,img, bbox):
+    def ask_pins(self, img, bbox):
         box_str = ""
 
         for box in bbox:
