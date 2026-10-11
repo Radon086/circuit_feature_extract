@@ -113,13 +113,14 @@ class DetectorManager:
         for prediction in final_predictions:
             x1, y1, x2, y2, score, class_id = prediction
             label = names[int(class_id)]
-            region_img = cv2.imread(image_path)[y1:y2, x1:x2]
+            # not needed for now
+            #region_img = cv2.imread(image_path)[y1:y2, x1:x2]
             tmp.append(
                 {
                     "label": label,
                     "confidence": float(score),
                     "box": [int(x1), int(y1), int(x2), int(y2)],
-                    "region_img": region_img  # Store the cropped region image for wire line analysis shit
+                    #"region_img": region_img  # Store the cropped region image for wire line analysis shit
                 }
             )
             

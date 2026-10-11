@@ -24,9 +24,10 @@ from manager_vlm import VLMManager
 
 # img_list = ['./imgs/app_circuits/L298_8.png','./imgs/app_circuits/L298_9_2.png','./imgs/app_circuits/L298_10.png','./imgs/app_circuits/tps5430_7-9.png']
 # img_list = ['./imgs/app_circuits/L298_10.png']
-img_list = ['./imgs/block_circuit_diagram/I298_1.png']
+#img_list = ['./imgs/block_circuit_diagram/I298_1.png']
 #img_list = ['./imgs/functional_block/adxl354.png','./imgs/functional_block/TJA1024.png','./imgs/functional_block/tps5430.png']
-
+img_list = ['./imgs/app_circuits/L298_8.png','./imgs/app_circuits/L298_9_2.png','./imgs/app_circuits/L298_10.png','./imgs/app_circuits/tps5430_7-9.png','./imgs/block_circuit_diagram/I298_1.png']
+#img_list = ['./imgs/app_circuits/L298_8.png']
 
 manager_detector = DetectorManager(yolo_checkpoint="./model/yolo/yolov8_best.pt")
 manager_ocr = OCRManager(det_arch="db_resnet50", reco_arch="master", pretrained=True)
@@ -56,7 +57,6 @@ for img_path in img_list:
     meta["components"] = componets
     meta["ic"] = ic_bbox
     meta['ic_connection'] = respond_ask_pins
-
     meta_list.append({file_name: meta})
 
 with open(f"{out_dir}/meta.jsonl", 'w') as f:

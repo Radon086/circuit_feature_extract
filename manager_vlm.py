@@ -36,12 +36,13 @@ class VLMManager:
         stroke_width = 2 * dist
         values = stroke_width[binary > 0]
         median = np.median(values).item()
+        '''
         print("Min:", values.min())
         print("Max:", values.max())
         print("Median:", np.median(values))
         print("90th percentile:", np.percentile(values, 90))
         print("95th percentile:", np.percentile(values, 95))
-
+        '''
         return values, median
 
     def _filter_by_thickness(self, image_path, threshold=4.0):
@@ -85,6 +86,12 @@ class VLMManager:
             response = response[index+10:]
         return response
     
+    def _remove_json_tags(self, response):
+        if response.startswith("```json") and response.endswith("```"):
+            response = response[7:-3].strip()
+        return response
+            
+
     def locate_IC(self,img_path, output_path, save_filterd=False, save_annotated=True):
         _, median = self._find_strokes(img_path)
         width_mask, _ = self._filter_by_thickness(img_path, threshold=median*2)
@@ -100,7 +107,7 @@ class VLMManager:
             cv2.imwrite(f"{output_path}/Width_Filtered_{file_name}.png", width_mask)
 
         dic = []
-        print(f'\nVLM Finding IC:{img_path}')
+        print(f'VLM Finding IC:{img_path}')
         prompt = [
             {
                 "role": "user", "content": [
@@ -126,7 +133,6 @@ class VLMManager:
         response = self.processor.decode(outputs[0][input_len:], skip_special_tokens=False)
         response = self._remove_model_thinktags(response)
         #print("Response:\n", response)
-        file_name = img_path.split('/')[-1]
 
         response = response.splitlines()
         img = cv2.imread(img_path)
@@ -147,7 +153,7 @@ class VLMManager:
             cv2.imwrite(f"{output_path}/IC_annotated_{file_name}.png", img)
         return boxes
     
-    def ask_pins(self, img, bbox):
+    def ask_pins(self, img, bbox, show_response=False):
         box_str = ""
 
         response_list = []
@@ -179,7 +185,9 @@ class VLMManager:
             outputs = self.model.generate(**inputs, max_new_tokens= self.max_new_tokens, temperature=self.temperature)
             response = self.processor.decode(outputs[0][input_len:], skip_special_tokens=False)
             response = self._remove_model_thinktags(response)
-            print("Response:\n", response)  
+            response = self._remove_json_tags(response)
+            response = json.loads(response)
+            if show_response:
+                print("Response:\n", response)  
             response_list.append(response)
-       
         return response_list
