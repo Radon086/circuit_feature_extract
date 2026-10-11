@@ -150,6 +150,7 @@ class VLMManager:
     def ask_pins(self, img, bbox):
         box_str = ""
 
+        response_list = []
         for box in bbox:
             x1, y1, x2, y2 = box
             box_str += f"[{x1}, {y1}, {x2}, {y2}]\n"
@@ -179,3 +180,6 @@ class VLMManager:
             response = self.processor.decode(outputs[0][input_len:], skip_special_tokens=False)
             response = self._remove_model_thinktags(response)
             print("Response:\n", response)  
+            response_list.append(response)
+       
+        return response_list
